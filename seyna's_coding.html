@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seyna's Taskholic</title>
+    
+    <link rel="manifest" href="data:application/manifest+json,{'name':'Taskholic','short_name':'Taskholic','start_url':'.','display':'standalone','background_color':'#ffcce6','theme_color':'#ffb399'}" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <style>
+        :root {
+            --pink-bg: #ffcce6; --purple-bg: #d9ccff; --blue-bg: #cce6ff;
+            --sidebar-color: #ffb399; --urgent-color: #ff9999;
+        }
+
+        body { font-family: 'Comic Sans MS', cursive, sans-serif; margin: 0; display: flex; height: 100vh; background: #f9f9f9; }
+
+        /* SIDEBAR - Responsive untuk HP */
+        .sidebar { width: 220px; background: var(--sidebar-color); padding: 20px; border-right: 3px solid #333; flex-shrink: 0; }
+        .sidebar h1 { font-size: 22px; color: #fff; text-align: center; margin-bottom: 30px; }
+        .nav-item { background: rgba(255,255,255,0.4); padding: 12px; border-radius: 8px; cursor: pointer; margin-bottom: 10px; transition: 0.2s; border: 1px solid transparent; }
+        .nav-item:hover { background: #fff; border-color: #333; }
+
+        /* MAIN CONTENT */
+        .main-content { flex: 1; padding: 20px; overflow-y: auto; }
+        .page { display: none; width: 100%; max-width: 700px; margin: 0 auto; animation: fadeIn 0.3s; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* CARD & MATRIX */
+        .container-box { padding: 25px; border-radius: 20px; border: 2px solid #333; box-shadow: 5px 5px 0px #333; }
+        .matrix-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        
+        /* Responsive Grid untuk HP */
+        @media (max-width: 600px) {
+            body { flex-direction: column; }
+            .sidebar { width: 100%; height: auto; padding: 10px; display: flex; overflow-x: auto; gap: 10px; border-right: none; border-bottom: 3px solid #333; }
+            .sidebar h1 { display: none; }
+            .nav-item { margin-bottom: 0; white-space: nowrap; padding: 8px 15px; }
+            .matrix-grid { grid-template-columns: 1fr; }
+        }
+
+        .quadrant { padding: 15px; border-radius: 12px; border: 2px solid #444; min-height: 150px; }
+        .do-now { background: #ff9999; } .schedule { background: #ffeb99; }
+        .minimize { background: #99ffcc; } .eliminate { background: #99ccff; }
+
+        .task-item { background: rgba(255,255,255,0.7); margin: 5px 0; padding: 8px 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #666; font-size: 0.9rem; }
+        .task-item span { cursor: pointer; flex: 1; }
+        .delete-btn { color: red; font-weight: bold; cursor: pointer; margin-left: 10px; font-size: 12px; }
+        
+        input[type="text"] { width: 90%; padding: 8px; margin-top: 10px; border: 1px solid #333; border-radius: 4px; box-sizing: border-box; }
+        .section-title { font-size: 1.2rem; margin-bottom: 10px; text-align: center; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h1>TASKHOLIC ⭐️</h1>
+        <div class="nav-item" onclick="showPage('matrix')">📂 Tasks</div>
+        <div class="nav-item" onclick="showPage('deadline')">⏳ Deadline</div>
+        <div class="nav-item" onclick="showPage('calendar')">🗓️ Calendar</div>
+    </div>
+
+    <div class="main-content">
+        <div id="matrix" class="page active">
+            <div class="container-box" style="background: var(--pink-bg);">
+                <div class="section-title">Get To Know Your Tasks? 📝</div>
+                <div class="matrix-grid">
+                    <div class="quadrant do-now"><strong>DO NOW</strong><div class="list" id="list-do"></div><input type="text" placeholder="+ mission" onkeypress="addT(event, 'do')"></div>
+                    <div class="quadrant schedule"><strong>SCHEDULE</strong><div class="list" id="list-sch"></div><input type="text" placeholder="+ mission" onkeypress="addT(event, 'sch')"></div>
+                    <div class="quadrant minimize"><strong>MINIMIZE</strong><div class="list" id="list-min"></div><input type="text" placeholder="+ mission" onkeypress="addT(event, 'min')"></div>
+                    <div class="quadrant eliminate"><strong>ELIMINATE</strong><div class="list" id="list-eli"></div><input type="text" placeholder="+ mission" onkeypress="addT(event, 'eli')"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="deadline" class="page">
+            <div class="container-box" style="background: var(--purple-bg);">
+                <div class="section-title">How Much Time Left? ⏳</div>
+                <div class="matrix-grid">
+                    <div class="quadrant" style="background: #fff;"><strong>WEEK OR LESS</strong><div class="list" id="list-week"></div><input type="text" placeholder="+ add" onkeypress="addT(event, 'week')"></div>
+                    <div class="quadrant" style="background: #fff;"><strong>A MONTH</strong><div class="list" id="list-month"></div><input type="text" placeholder="+ add" onkeypress="addT(event, 'month')"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="calendar" class="page">
+            <div class="container-box" style="background: var(--blue-bg);">
+                <div class="section-title">THIS WEEK AGENDA 🗓️</div>
+                <div class="matrix-grid">
+                    <div class="quadrant" style="background: #fff;"><strong>TASKS</strong><div class="list" id="list-cal-t"></div><input type="text" placeholder="+ add" onkeypress="addT(event, 'cal-t')"></div>
+                    <div class="quadrant" style="background: #fff;"><strong>MEETINGS</strong><div class="list" id="list-cal-m"></div><input type="text" placeholder="+ add" onkeypress="addT(event, 'cal-m')"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Jalankan saat web dibuka
+        document.addEventListener('DOMContentLoaded', loadData);
+
+        function showPage(id) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function addT(e, type) {
+            if (e.key === 'Enter' && e.target.value !== '') {
+                createTaskElement(type, e.target.value);
+                e.target.value = '';
+                saveData(); // Simpan otomatis
+            }
+        }
+
+        function createTaskElement(type, val) {
+            const listDiv = document.getElementById('list-' + type);
+            const item = document.createElement('div');
+            item.className = 'task-item';
+            item.innerHTML = `
+                <span onclick="editT(this, '${type}')">${val}</span>
+                <div class="delete-btn" onclick="this.parentElement.remove(); saveData();">[DEL]</div>
+            `;
+            listDiv.appendChild(item);
+        }
+
+        function editT(el, type) {
+            const oldVal = el.innerText;
+            const newVal = prompt("Edit tugas:", oldVal);
+            if (newVal !== null && newVal !== "") {
+                el.innerText = newVal;
+                saveData(); // Simpan otomatis
+            }
+        }
+
+        // LOGIKA AUTO SAVE
+        function saveData() {
+            const allData = {};
+            document.querySelectorAll('.list').forEach(list => {
+                const id = list.id.replace('list-', '');
+                const tasks = [];
+                list.querySelectorAll('.task-item span').forEach(span => {
+                    tasks.push(span.innerText);
+                });
+                allData[id] = tasks;
+            });
+            localStorage.setItem('taskholic_db', JSON.stringify(allData));
+        }
+
+        function loadData() {
+            const rawData = localStorage.getItem('taskholic_db');
+            if (rawData) {
+                const data = JSON.parse(rawData);
+                for (const section in data) {
+                    data[section].forEach(text => createTaskElement(section, text));
+                }
+            }
+        }
+    </script>
+</body>
+</html>
